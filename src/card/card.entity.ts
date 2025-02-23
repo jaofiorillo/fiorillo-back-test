@@ -8,6 +8,7 @@ import {
     ManyToOne,
     OneToMany,
 } from 'typeorm';
+import { ECardStatus } from '../enums/card_status.enum';
 
 @Entity({ name: 'card' })
 export class CardEntity {
@@ -23,8 +24,13 @@ export class CardEntity {
     @CreateDateColumn({ name: 'creation_date' })
     creation_date: Date;
 
-    @Column({ name: 'status', length: 400, nullable: false })
-    status: string;
+    @Column({
+        name: 'status',
+        nullable: false,
+        type: 'enum',
+        enum: ECardStatus,
+    })
+    status: ECardStatus;
 
     @ManyToOne(() => UserEntity, (fk_user) => fk_user.cards)
     fk_user: UserEntity;

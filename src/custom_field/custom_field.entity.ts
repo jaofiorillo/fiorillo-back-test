@@ -1,6 +1,6 @@
 import { CardEntity } from '../card/card.entity';
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
-import { ECustomFieldType } from './custom_field_type.enum';
+import { ECustomFieldType } from '../enums/custom_field_type.enum';
 
 @Entity({ name: 'custom_field' })
 export class CustomFieldEntity {
