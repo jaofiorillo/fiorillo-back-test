@@ -22,13 +22,17 @@ export class UserService {
     }
 
     async emailExists(email: string) {
-        const checkEmail = await this.userRepository.findOne({
-            where: { email },
-        });
+        const checkEmail = await this.findOneByEmail(email);
 
         if (checkEmail) {
             throw new BadRequestException('Email ja existente');
         }
+    }
+
+    async findOneByEmail(email: string) {
+        return this.userRepository.findOne({
+            where: { email },
+        });
     }
 
     async findAll(): Promise<UserEntity[]> {
