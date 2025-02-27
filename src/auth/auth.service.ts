@@ -1,6 +1,9 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcryptjs';
+import { jwtConstants } from 'src/common/constants';
 import { UserService } from 'src/user/user.service';
+import { Request } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -11,18 +14,43 @@ export class AuthService {
 
     async signIn(
         email: string,
-        pass: string,
+        password: string,
     ): Promise<{ access_token: string }> {
         const user = await this.userService.findOneByEmail(email);
-        console.log(user);
 
-        if (user?.password !== pass) {
+        if (!user || !(await bcrypt.compare(password, user.password))) {
             throw new UnauthorizedException('Credenciais incorretas');
         }
-        const payload = { sub: user.id, username: user.name };
 
+        const payload = { sub: user.id, username: user.name };
         return {
             access_token: await this.jwtService.signAsync(payload),
         };
+    }
+
+    async getAuthUser(request: Request) {
+        const token = this.extractTokenFromHeader(request);
+        if (!token) {
+            throw new UnauthorizedException('Token não fornecido');
+        }
+
+        const payload = await this.jwtService.verifyAsync(token, {
+            secret: jwtConstants.secret,
+        });
+
+        const user = await this.userService.findOneById(payload.sub);
+        if (!user) {
+            throw new UnauthorizedException('Usuário não encontrado');
+        }
+
+        return user;
+    }
+
+    private extractTokenFromHeader(request: Request): string | undefined {
+        const authHeader = request.headers.authorization;
+        if (!authHeader) return undefined;
+
+        const [type, token] = authHeader.split(' ');
+        return type === 'Bearer' ? token : undefined;
     }
 }

@@ -8,6 +8,7 @@ import { UserEntity } from './user.entity';
 import { Repository } from 'typeorm';
 import { UserDto, UserResponse } from './dto/user.dto';
 import { plainToInstance } from 'class-transformer';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
@@ -18,6 +19,7 @@ export class UserService {
 
     async create(user: UserDto) {
         this.emailExists(user.email);
+        user.password = await bcrypt.hash(user.password, 10);
         await this.userRepository.save(user);
     }
 
@@ -33,6 +35,17 @@ export class UserService {
         return this.userRepository.findOne({
             where: { email },
         });
+    }
+
+    async findOneById(id: string) {
+        return this.userRepository
+            .findOneByOrFail({ id: id })
+            .catch(() => {
+                throw new NotFoundException('Usuário não encontrado');
+            })
+            .then((user) => {
+                return user;
+            });
     }
 
     async findAll(): Promise<UserEntity[]> {
@@ -51,16 +64,5 @@ export class UserService {
         }
 
         return users_response;
-    }
-
-    async findOneById(id: string) {
-        return this.userRepository
-            .findOneByOrFail({ id: id })
-            .catch(() => {
-                throw new NotFoundException('Usuário não encontrado');
-            })
-            .then((user) => {
-                return user;
-            });
     }
 }

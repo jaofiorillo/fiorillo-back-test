@@ -9,12 +9,14 @@ import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { jwtConstants } from 'src/common/constants';
 import { IS_PUBLIC_KEY } from 'src/decorators/decorators';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
     constructor(
         private jwtService: JwtService,
         private reflector: Reflector,
+        private readonly userService: UserService,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -28,18 +30,24 @@ export class AuthGuard implements CanActivate {
 
         const request = context.switchToHttp().getRequest();
         const token = this.extractTokenFromHeader(request);
+
         if (!token) {
-            throw new UnauthorizedException('aaaaa');
+            throw new UnauthorizedException('Token não fornecido');
         }
+
         try {
             const payload = await this.jwtService.verifyAsync(token, {
                 secret: jwtConstants.secret,
             });
 
-            request['user'] = payload;
-        } catch {
-            throw new UnauthorizedException();
+            const user = await this.userService.findOneById(payload.sub);
+            if (!user) {
+                throw new UnauthorizedException('Usuário não encontrado');
+            }
+        } catch (error) {
+            throw new UnauthorizedException('Token inválido ou expirado');
         }
+
         return true;
     }
 

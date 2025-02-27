@@ -1,7 +1,15 @@
-import { IsNotEmpty, IsString, IsEnum } from 'class-validator';
+import {
+    IsNotEmpty,
+    IsString,
+    IsEnum,
+    ValidateNested,
+    IsOptional,
+    IsArray,
+} from 'class-validator';
 import { ECardStatus } from '../../enums/card_status.enum';
-import { Exclude } from 'class-transformer';
+import { Exclude, Type } from 'class-transformer';
 import { UserEntity } from 'src/user/user.entity';
+import { CustomFieldDto } from 'src/custom_field/dto/custom_field.dto';
 
 export class CardDto {
     @IsString()
@@ -13,15 +21,16 @@ export class CardDto {
     @IsString()
     description: string;
 
+    @IsOptional()
     @IsEnum(ECardStatus)
     @IsString()
     status: ECardStatus;
 
-    @IsString()
-    @IsNotEmpty({
-        message: 'O usuario é obrigatório',
-    })
-    userId: string;
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => CustomFieldDto)
+    custom_fields: CustomFieldDto[];
 }
 
 export class CardResponse {
@@ -30,6 +39,7 @@ export class CardResponse {
     description: string;
     status: ECardStatus;
     userId: string;
+    custom_fields: CustomFieldDto[];
     @Exclude()
     fk_user: UserEntity;
 }

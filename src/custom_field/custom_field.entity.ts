@@ -1,5 +1,5 @@
 import { CardEntity } from '../card/card.entity';
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { ECustomFieldType } from '../enums/custom_field_type.enum';
 
 @Entity({ name: 'custom_field' })
@@ -25,6 +25,8 @@ export class CustomFieldEntity {
     @Column({ name: 'list', type: 'json', nullable: true })
     list?: string[];
 
-    @OneToMany(() => CardEntity, (fk_card) => fk_card.custom_fields)
+    @ManyToOne(() => CardEntity, (card) => card.custom_fields, {
+        onDelete: 'CASCADE',
+    })
     fk_card: CardEntity;
 }

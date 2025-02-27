@@ -35,9 +35,8 @@ export class CardEntity {
     @ManyToOne(() => UserEntity, (fk_user) => fk_user.cards)
     fk_user: UserEntity;
 
-    @OneToMany(
-        () => CustomFieldEntity,
-        (custom_fields) => custom_fields.fk_card,
-    )
+    @OneToMany(() => CustomFieldEntity, (customField) => customField.fk_card, {
+        cascade: true,
+    })
     custom_fields: CustomFieldEntity[];
 }
