@@ -11,12 +11,7 @@ import { AuthService } from 'src/auth/auth.service';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([
-            CardEntity,
-            UserEntity,
-            CustomFieldEntity,
-            CustomFieldEntity,
-        ]),
+        TypeOrmModule.forFeature([CardEntity, UserEntity, CustomFieldEntity]),
     ],
     controllers: [CardController],
     providers: [CardService, UserService, CustomFieldService, AuthService],

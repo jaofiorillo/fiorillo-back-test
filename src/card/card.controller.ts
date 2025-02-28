@@ -7,7 +7,7 @@ import { Request } from 'express';
 export class CardController {
     constructor(private readonly cardService: CardService) {}
 
-    @Post('/store')
+    @Post()
     async create(@Body() card: CardDto, @Req() request: Request) {
         await this.cardService.create(card, request);
     }

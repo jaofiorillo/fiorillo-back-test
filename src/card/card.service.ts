@@ -1,14 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CardEntity } from './card.entity';
 import { Repository } from 'typeorm';
 import { CardDto, CardResponse } from './dto/card.dto';
-import { UserService } from 'src/user/user.service';
 import { ECardStatus } from '../enums/card_status.enum';
 import { plainToInstance } from 'class-transformer';
 import { ERole } from 'src/enums/role.enum';
-import { CustomFieldService } from 'src/custom_field/custom_field.service';
-import { CustomFieldDto } from 'src/custom_field/dto/custom_field.dto';
 import { AuthService } from 'src/auth/auth.service';
 import { Request } from 'express';
 @Injectable()
@@ -16,8 +13,6 @@ export class CardService {
     constructor(
         @InjectRepository(CardEntity)
         private readonly cardRepository: Repository<CardEntity>,
-        private readonly userService: UserService,
-        private readonly customFieldService: CustomFieldService,
         private readonly authService: AuthService,
     ) {}
 
@@ -27,11 +22,7 @@ export class CardService {
         new_card.fk_user = await this.authService.getAuthUser(request);
         new_card.status = ECardStatus.CRIADO;
 
-        const save_card = await this.cardRepository.save(new_card);
-
-        if (card.custom_fields.length > 0) {
-            await this.customFieldService.create(save_card, card.custom_fields);
-        }
+        await this.cardRepository.save(new_card);
     }
 
     async findAll(): Promise<CardEntity[]> {
@@ -42,8 +33,7 @@ export class CardService {
         const cards_response: CardDto[] = [];
         const query = this.cardRepository
             .createQueryBuilder('card')
-            .innerJoinAndSelect('card.fk_user', 'user')
-            .innerJoinAndSelect('card.custom_fields', 'custom_field');
+            .innerJoinAndSelect('card.fk_user', 'user');
 
         const user = await this.authService.getAuthUser(request);
         const userId = user.id;
@@ -58,15 +48,39 @@ export class CardService {
             for (let card of cards) {
                 let card_response = plainToInstance(CardResponse, card);
                 card_response.userId = card.fk_user.id;
-                card_response.custom_fields = plainToInstance(
-                    CustomFieldDto,
-                    card.custom_fields,
-                );
                 cards_response.push(card_response);
             }
         }
 
         return cards_response;
+    }
+
+    async findOneById(id: string) {
+        return this.cardRepository
+            .findOneByOrFail({ id: id })
+            .catch(() => {
+                throw new NotFoundException('Card não encontrado');
+            })
+            .then((card) => {
+                return card;
+            });
+    }
+
+    async findCardsByUserId(userId: string) {
+        return this.cardRepository
+            .find({
+                where: {
+                    fk_user: {
+                        id: userId,
+                    },
+                },
+            })
+            .catch(() => {
+                throw new NotFoundException('Cards não encontrados');
+            })
+            .then((card) => {
+                return card;
+            });
     }
 
     async update(id: string, card: CardDto) {

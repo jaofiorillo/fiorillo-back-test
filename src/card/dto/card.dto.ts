@@ -25,12 +25,6 @@ export class CardDto {
     @IsEnum(ECardStatus)
     @IsString()
     status: ECardStatus;
-
-    @IsOptional()
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => CustomFieldDto)
-    custom_fields: CustomFieldDto[];
 }
 
 export class CardResponse {
@@ -39,7 +33,8 @@ export class CardResponse {
     description: string;
     status: ECardStatus;
     userId: string;
-    custom_fields: CustomFieldDto[];
+    @Exclude()
+    custom_fieldsd: CustomFieldDto[];
     @Exclude()
     fk_user: UserEntity;
 }
