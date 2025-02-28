@@ -1,13 +1,6 @@
-import {
-    IsNotEmpty,
-    IsString,
-    IsEnum,
-    ValidateNested,
-    IsOptional,
-    IsArray,
-} from 'class-validator';
+import { IsNotEmpty, IsString, IsEnum, IsOptional } from 'class-validator';
 import { ECardStatus } from '../../enums/card_status.enum';
-import { Exclude, Type } from 'class-transformer';
+import { Exclude } from 'class-transformer';
 import { UserEntity } from 'src/user/user.entity';
 import { CustomFieldDto } from 'src/custom_field/dto/custom_field.dto';
 

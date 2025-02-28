@@ -1,13 +1,12 @@
 import {
-    BadRequestException,
     Injectable,
+    InternalServerErrorException,
     NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CustomFieldEntity } from './custom_field.entity';
 import { Repository } from 'typeorm';
 import { CustomFieldDto } from './dto/custom_field.dto';
-import { ECustomFieldType } from 'src/enums/custom_field_type.enum';
 import { Request } from 'express';
 import { CardService } from 'src/card/card.service';
 import { AuthService } from 'src/auth/auth.service';
@@ -23,7 +22,7 @@ export class CustomFieldService {
     ) {}
 
     async create(custom_field: CustomFieldDto, request: Request) {
-        const user = await this.authService.getAuthUser(request);
+        const user = await this.authService.getAuthenticatedUser(request);
         const cards = await this.cardService.findCardsByUserId(user.id);
 
         for (let card of cards) {
@@ -34,18 +33,15 @@ export class CustomFieldService {
         }
     }
 
-    validateTypeCustomField(custom_field: CustomFieldDto) {
-        const isInvalid =
-            (custom_field.type === ECustomFieldType.BOOLEAN &&
-                custom_field.boolean === null) ||
-            (custom_field.type === ECustomFieldType.LIST &&
-                (!custom_field.list || custom_field.list.length <= 0)) ||
-            (custom_field.type === ECustomFieldType.TEXT &&
-                custom_field.text === null);
-
-        if (isInvalid) {
-            throw new BadRequestException('Erro no tipo do custo field');
-        }
+    async findOneById(id: string) {
+        return this.customFieldRepository
+            .findOneByOrFail({ id: id })
+            .catch(() => {
+                throw new NotFoundException('Campo não encontrado');
+            })
+            .then((card) => {
+                return card;
+            });
     }
 
     async update(id: string, custom_field: CustomFieldDto) {
@@ -77,5 +73,16 @@ export class CustomFieldService {
         }
 
         return fields_response;
+    }
+
+    async delete(id: string) {
+        try {
+            const field = await this.findOneById(id);
+            await this.customFieldRepository.softDelete(field.id);
+
+            return { deleted: true };
+        } catch (error) {
+            throw new InternalServerErrorException(error);
+        }
     }
 }

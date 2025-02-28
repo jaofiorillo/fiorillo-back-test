@@ -8,12 +8,15 @@ import { CardService } from './card.service';
 import { UserService } from 'src/user/user.service';
 import { CustomFieldService } from 'src/custom_field/custom_field.service';
 import { AuthService } from 'src/auth/auth.service';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
     imports: [
+        UserModule,
         TypeOrmModule.forFeature([CardEntity, UserEntity, CustomFieldEntity]),
     ],
     controllers: [CardController],
     providers: [CardService, UserService, CustomFieldService, AuthService],
+    exports: [CardService],
 })
 export class CardModule {}

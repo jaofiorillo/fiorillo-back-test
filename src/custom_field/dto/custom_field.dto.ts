@@ -13,7 +13,9 @@ export class CustomFieldDto {
 
     @IsEnum(ECustomFieldType)
     @IsString()
-    @IsNotEmpty()
+    @IsNotEmpty({
+        message: 'O tipo do campo customizado é obrigatório',
+    })
     type: ECustomFieldType;
 
     @IsOptional()

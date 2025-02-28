@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+    Injectable,
+    InternalServerErrorException,
+    NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CardEntity } from './card.entity';
 import { Repository } from 'typeorm';
@@ -8,18 +12,20 @@ import { plainToInstance } from 'class-transformer';
 import { ERole } from 'src/enums/role.enum';
 import { AuthService } from 'src/auth/auth.service';
 import { Request } from 'express';
+import { UserService } from 'src/user/user.service';
 @Injectable()
 export class CardService {
     constructor(
         @InjectRepository(CardEntity)
         private readonly cardRepository: Repository<CardEntity>,
         private readonly authService: AuthService,
+        private readonly userService: UserService,
     ) {}
 
     async create(card: CardDto, request: Request) {
-        const new_card = await this.cardRepository.create(card);
+        const new_card = this.cardRepository.create(card);
 
-        new_card.fk_user = await this.authService.getAuthUser(request);
+        new_card.fk_user = await this.authService.getAuthenticatedUser(request);
         new_card.status = ECardStatus.CRIADO;
 
         await this.cardRepository.save(new_card);
@@ -30,12 +36,11 @@ export class CardService {
     }
 
     async getAll(request: Request) {
-        const cards_response: CardDto[] = [];
         const query = this.cardRepository
             .createQueryBuilder('card')
             .innerJoinAndSelect('card.fk_user', 'user');
 
-        const user = await this.authService.getAuthUser(request);
+        const user = await this.authService.getAuthenticatedUser(request);
         const userId = user.id;
 
         if (user.role == ERole.STANDARD_USER) {
@@ -43,6 +48,7 @@ export class CardService {
         }
 
         const cards = await query.getMany();
+        const cards_response: CardDto[] = [];
 
         if (!!cards.length) {
             for (let card of cards) {
@@ -83,11 +89,31 @@ export class CardService {
             });
     }
 
+    async deleteUserCards(userId: string) {
+        const cards = await this.findCardsByUserId(userId);
+        for (let card of cards) {
+            await this.delete(card.id);
+        }
+
+        this.userService.delete(userId);
+    }
+
     async update(id: string, card: CardDto) {
         try {
             await this.cardRepository.update(id, card);
         } catch (error) {
             throw new Error(error);
+        }
+    }
+
+    async delete(id: string) {
+        try {
+            const card = await this.findOneById(id);
+            await this.cardRepository.delete(card.id);
+
+            return { deleted: true };
+        } catch (error) {
+            throw new InternalServerErrorException(error);
         }
     }
 }

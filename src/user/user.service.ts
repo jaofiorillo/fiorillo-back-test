@@ -1,6 +1,7 @@
 import {
     BadRequestException,
     Injectable,
+    InternalServerErrorException,
     NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -18,17 +19,18 @@ export class UserService {
     ) {}
 
     async create(user: UserDto) {
-        this.emailExists(user.email);
+        const checkEmail = await this.emailExists(user.email);
+
+        if (checkEmail) {
+            throw new BadRequestException('Email ja existente');
+        }
+
         user.password = await bcrypt.hash(user.password, 10);
         await this.userRepository.save(user);
     }
 
     async emailExists(email: string) {
-        const checkEmail = await this.findOneByEmail(email);
-
-        if (checkEmail) {
-            throw new BadRequestException('Email ja existente');
-        }
+        return await this.findOneByEmail(email);
     }
 
     async findOneByEmail(email: string) {
@@ -64,5 +66,31 @@ export class UserService {
         }
 
         return users_response;
+    }
+
+    async update(id: string, user: UserDto) {
+        try {
+            const userCheckEmail = await this.emailExists(user.email);
+
+            if (userCheckEmail && userCheckEmail.id != id) {
+                throw new BadRequestException('Email ja existente');
+            }
+
+            user.password = await bcrypt.hash(user.password, 10);
+            await this.userRepository.update(id, user);
+        } catch (error) {
+            throw new Error(error);
+        }
+    }
+
+    async delete(id: string) {
+        try {
+            const user = await this.findOneById(id);
+            await this.userRepository.delete(user.id);
+
+            return { deleted: true };
+        } catch (error) {
+            throw new InternalServerErrorException(error);
+        }
     }
 }

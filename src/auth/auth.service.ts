@@ -28,7 +28,7 @@ export class AuthService {
         };
     }
 
-    async getAuthUser(request: Request) {
+    async getAuthenticatedUser(request: Request) {
         const token = this.extractTokenFromHeader(request);
         if (!token) {
             throw new UnauthorizedException('Token não fornecido');
